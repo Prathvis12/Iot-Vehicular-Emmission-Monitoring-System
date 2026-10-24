@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "pollutionmonitoring-4156-69176",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

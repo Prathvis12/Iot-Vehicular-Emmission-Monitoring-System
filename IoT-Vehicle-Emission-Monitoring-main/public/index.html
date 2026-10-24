@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFleet IoT Pollution & Environmental Monitoring</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Modular Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+
+        <!-- Header Navbar -->
+        <header class="navbar">
+            <div class="brand-section">
+                <div class="logo-box">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>CityFleet <span>IoT</span></h1>
+                    <p>Environmental & Pollution Telemetry Station</p>
+                </div>
+            </div>
+
+            <div class="status-center">
+                <div class="live-pill" id="systemLivePill">
+                    <span class="pulse-dot" id="systemLiveDot"></span>
+                    <span id="systemLiveText">Connecting...</span>
+                </div>
+                <div class="sync-ticker" id="lastSyncTimer">Updated: Just now</div>
+            </div>
+
+            <div class="nav-controls">
+                <button id="toggleDemoModeBtn" class="btn btn-secondary">⚡ Mode: Live Cloud</button>
+                <button id="refreshBtn" class="btn btn-secondary" title="Force Data Refresh">🔄 Refresh</button>
+                <button id="toggleHeatmapBtn" class="btn btn-primary" title="Toggle Pollution Density Heatmap">🔥 Heatmap</button>
+                <button id="audioToggleBtn" class="btn btn-secondary" title="Toggle Alert Sound Chimes">
+                    🔔 <span id="audioStateText">ON</span>
+                </button>
+                <button id="downloadCSVBtn" class="btn btn-secondary" title="Export Telemetry to CSV">📥 CSV</button>
+                <button id="downloadJSONBtn" class="btn btn-secondary" title="Export Full Snapshot to JSON">📋 JSON</button>
+            </div>
+        </header>
+
+        <!-- System Status Banner (Informs user of Live Cloud vs Demo Fixture) -->
+        <div id="systemBanner" class="system-banner system-banner-info">
+            <div id="systemBannerText">
+                Connecting to Firebase Realtime Database cloud stream...
+            </div>
+            <div class="banner-actions">
+                <small style="opacity: 0.85;">Station: Mijar, Moodbidri</small>
+            </div>
+        </div>
+
+        <!-- KPI Statistic Row -->
+        <section class="kpi-row">
+            <div class="kpi-card kpi-co2">
+                <div class="kpi-header">
+                    <span class="kpi-title">Average Fleet CO₂</span>
+                    <span class="kpi-icon">🌫️</span>
+                </div>
+                <div class="kpi-value" id="avgEmission">-- <small>PPM</small></div>
+                <div class="kpi-desc" id="avgEmissionStatus">Evaluating air purity...</div>
+            </div>
+
+            <div class="kpi-card kpi-temp">
+                <div class="kpi-header">
+                    <span class="kpi-title">Ambient Temperature</span>
+                    <span class="kpi-icon">🌡️</span>
+                </div>
+                <div class="kpi-value" id="kpiTemp">-- <small>°C</small></div>
+                <div class="kpi-desc">DHT11 Environmental Sensor</div>
+            </div>
+
+            <div class="kpi-card kpi-humidity">
+                <div class="kpi-header">
+                    <span class="kpi-title">Relative Humidity</span>
+                    <span class="kpi-icon">💧</span>
+                </div>
+                <div class="kpi-value" id="kpiHumidity">-- <small>%</small></div>
+                <div class="kpi-desc">DHT11 Moisture Reading</div>
+            </div>
+
+            <div class="kpi-card kpi-vehicles">
+                <div class="kpi-header">
+                    <span class="kpi-title">Fleet Vehicles</span>
+                    <span class="kpi-icon">🚚</span>
+                </div>
+                <div class="kpi-value" id="vehicleCount">--</div>
+                <div class="kpi-desc">Active IoT Nodes</div>
+            </div>
+
+            <div class="kpi-card kpi-alerts">
+                <div class="kpi-header">
+                    <span class="kpi-title">Recorded Alerts</span>
+                    <span class="kpi-icon">⚠️</span>
+                </div>
+                <div class="kpi-value" id="alertCount">0</div>
+                <div class="kpi-desc">Threshold Breaches</div>
+            </div>
+        </section>
+
+        <!-- Main Workspace: Sidebar & Analytics Content -->
+        <main class="main-workspace">
+
+            <!-- Left Sidebar: Fleet List & Selected Node Details -->
+            <aside class="sidebar">
+
+                <!-- Vehicle Fleet Selector -->
+                <div class="card">
+                    <div class="card-title-bar">
+                        <div>
+                            <h2>Vehicle Fleet</h2>
+                            <p>Select a node to inspect telemetry</p>
+                        </div>
+                        <span class="badge" id="fleetBadge">0 Active</span>
+                    </div>
+                    <ul class="vehicle-list" id="vehicleList">
+                        <li class="vehicle-item" style="justify-content:center; color:#64748b;">
+                            Loading fleet nodes...
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Selected Vehicle Telemetry Card -->
+                <div class="card">
+                    <div class="card-title-bar">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <h2 id="vehicleNumber">KA01-5522</h2>
+                                <span id="telemetrySourceBadge" class="freshness-badge freshness-live">LIVE STREAM</span>
+                            </div>
+                            <p>Hardware Telemetry Node Details</p>
+                        </div>
+                        <div id="vehicleStatusBadge" class="status-badge status-normal">Normal</div>
+                    </div>
+
+                    <!-- Dynamic SVG Radial Gauge -->
+                    <div class="gauge-wrap">
+                        <div class="gauge-ring" id="gaugeCircle">
+                            <div class="gauge-center">
+                                <span class="gauge-value" id="co2Level">--</span>
+                                <span class="gauge-label">PPM CO₂</span>
+                                <span class="gauge-tag status-normal" id="aqiCategoryTag">Normal Air</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry Stats Grid -->
+                    <div class="telemetry-grid">
+                        <div class="tele-stat">
+                            <span class="tele-lbl">Emission Rate</span>
+                            <span class="tele-val" id="emissionPerKm">-- <small>g/km</small></span>
+                        </div>
+                        <div class="tele-stat">
+                            <span class="tele-lbl">Cumulative</span>
+                            <span class="tele-val" id="totalEmission">-- <small>g</small></span>
+                        </div>
+                        <div class="tele-stat">
+                            <span class="tele-lbl">Temperature</span>
+                            <span class="tele-val" id="nodeTemp">-- <small>°C</small></span>
+                        </div>
+                        <div class="tele-stat">
+                            <span class="tele-lbl">Humidity</span>
+                            <span class="tele-val" id="nodeHumidity">-- <small>%</small></span>
+                        </div>
+                        <div class="tele-stat">
+                            <span class="tele-lbl">MQ-135 Sensor</span>
+                            <span class="tele-val" id="nodeRawADC" style="font-size:13px;">ADC: --</span>
+                        </div>
+                        <div class="tele-stat">
+                            <span class="tele-lbl">GPS Status</span>
+                            <span id="gpsSourceBadge" class="gps-pill gps-demo">📍 Mijar, Moodbidri</span>
+                        </div>
+                        <div class="tele-stat span-2">
+                            <span class="tele-lbl">Coordinates</span>
+                            <span class="tele-val mono" id="gpsCoordinates">Lat: 13.023600 | Lng: 74.967600</span>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- Right Content Area: Chart, Map, Alert Feed -->
+            <section class="content-area">
+
+                <!-- Dynamic Real-Time Chart -->
+                <div class="card">
+                    <div class="card-title-bar">
+                        <div>
+                            <h2>Real-Time Telemetry Stream</h2>
+                            <p>Rolling 25-Point Sensor History</p>
+                        </div>
+                        <div class="tab-bar">
+                            <button class="tab-btn active" data-chart="co2">CO₂ (PPM)</button>
+                            <button class="tab-btn" data-chart="temp">Temperature</button>
+                            <button class="tab-btn" data-chart="humidity">Humidity</button>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="co2Chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Leaflet Geospatial Fleet Map -->
+                <div class="card">
+                    <div class="card-title-bar">
+                        <div>
+                            <h2>Fleet Geospatial Map & Pollution Heatmap</h2>
+                            <p>Fleet Location: Mijar, Moodbidri</p>
+                        </div>
+                        <button id="recenterMapBtn" class="btn btn-sm btn-secondary">🎯 Recenter</button>
+                    </div>
+                    <div id="map" class="map-box"></div>
+                </div>
+
+                <!-- Alerts & Anomaly Feed -->
+                <div class="card">
+                    <div class="card-title-bar">
+                        <div>
+                            <h2>Recent Incident & Anomaly Log</h2>
+                            <p>Auto-triggered when air pollution thresholds are exceeded</p>
+                        </div>
+                        <span class="badge" id="alertCounterBadge">0 Incidents Logged</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="styled-table" id="alertsTable">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle Node</th>
+                                    <th>CO₂ Level</th>
+                                    <th>Logged Time</th>
+                                    <th>Coordinates</th>
+                                    <th>Severity Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alertsBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">Awaiting alerts feed...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>
+                <strong>CityFleet IoT Pollution Monitoring System</strong> &bull; 
+                Hardware: ESP32 + MQ-135 + DHT11 + NEO-6M GPS &bull; 
+                Location: Mijar, Moodbidri &bull; 
+                Cloud: Firebase Realtime Database
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- Modular Frontend Application Controller -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
