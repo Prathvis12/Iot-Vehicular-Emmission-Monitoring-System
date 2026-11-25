@@ -30,7 +30,7 @@
 // 2. Google Firebase Realtime Database Configuration
 // ==============================================================================
 #define FIREBASE_HOST          "https://pollutionmonitoring-4156-69176-default-rtdb.firebaseio.com"
-#define FIREBASE_AUTH          "p3TIa3LJsekyl7uSorerohHrijf97UVjQMHkwR5k"
+#define FIREBASE_AUTH          "****************************************"
 #define VEHICLE_ID             "KA01-5522"
 
 // ==============================================================================
