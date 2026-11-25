@@ -249,7 +249,7 @@ The **CityFleet IoT Pollution Monitoring System** is an end-to-end Internet of T
 
 9. **Plaintext Hardcoded Secrets**
    - **Location:** [`Arduino_Code/pollution_monitor.ino:L19-25`](file:///home/shivuah/Pollution_Monitoring/Arduino_Code/pollution_monitor.ino#L19-L25), [`monitor.py:L29-30`](file:///home/shivuah/Pollution_Monitoring/monitor.py#L29-L30), [`public/config.js:L2-11`](file:///home/shivuah/Pollution_Monitoring/public/config.js#L2-L11)
-   - **Details:** Wi-Fi credentials (`WIFI_SSID = "Shivu"`), Firebase database secrets, and Firebase API keys are committed or staged in plain text.
+   - **Details:** Wi-Fi credentials (`WIFI_SSID = "Prathvik"`), Firebase database secrets, and Firebase API keys are committed or staged in plain text.
    - **Remediation:** Wi-Fi credentials should be managed via WiFiManager or an untracked `secrets.h`. Firebase database rules should enforce user/token auth rather than legacy database secrets.
 
 ---
