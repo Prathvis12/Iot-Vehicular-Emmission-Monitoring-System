@@ -2,7 +2,7 @@
 // CityFleet IoT Pollution Monitoring — Central Frontend Configuration
 // ==============================================================================
 
-export const RTDB_BASE_URL = "https://pollutionmonitoring-4156-69176-default-rtdb.firebaseio.com";
+export const RTDB_BASE_URL = "https://vehicular-emission-ml-default-rtdb.firebaseio.com";
 
 // Air Quality PPM Thresholds (MQ-135 / CO2 equivalent)
 export const THRESHOLDS = {
