@@ -177,5 +177,5 @@ Pollution_Monitoring/
 
 ## 👨‍💻 Author
 
-**Shivanand Hanchinal**  
-GitHub: [https://github.com/ShivuAH](https://github.com/ShivuAH)
+**Prathvik P**  
+GitHub: [https://github.com/Prathvis12](https://github.com/Prathvis12)
